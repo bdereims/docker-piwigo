@@ -1,16 +1,35 @@
 FROM debian 
 MAINTAINER Brice Dereims "bdereims@gmail.com"
 
-RUN apt-get update
+ENV DEBIAN_FRONTEND noninteractive
 
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get -y install mysql-client mysql-server phpmyadmin
+RUN apt-get update \
+	&& apt-get dist-upgrade -y \
+	&& apt-get install apache2 libapache2-mod-php5 -y \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN sed -i -e"s/^bind-address\s*=\s*127.0.0.1/bind-address = 0.0.0.0/" /etc/mysql/my.cnf
-RUN echo "Include /etc/phpmyadmin/apache.conf" >> /etc/apache2/apache2.conf
+RUN apt-get update \
+	&& apt-get install -y php5-mysql imagemagick wget unzip \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN apt-get update \
+	&& apt-get install -y php5-gd dcraw mediainfo \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# php5-ffmpeg ffmpeg
+
+RUN wget -q -O piwigo.zip http://piwigo.org/download/dlcounter.php?code=latest \
+	&& unzip piwigo.zip \
+	&& rm -fr /var/www/html \
+	&& mv ./piwigo /var/www/html \
+	&& chown -R www-data:www-data /var/www
+
+ADD php.ini /etc/php5/apache2/php.ini
 
 ADD ./startup.sh /opt/startup.sh
 
-EXPOSE 3306
 EXPOSE 80
 
 CMD ["/bin/bash", "/opt/startup.sh"]
